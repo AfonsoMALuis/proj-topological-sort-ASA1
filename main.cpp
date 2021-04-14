@@ -1,7 +1,14 @@
 #include <iostream>
 #include <list>
+#include <vector>
+#include <algorithm>
+#include <stack>
 
 int visited = 0, nSCC = 0, maxSCCElemnts = 0, nSCCElementsAux = 0;;
+int *d, *low;
+int Nnodes, Nedges;
+bool *isStackMember;
+std::stack<int> *L;
 
 using namespace std;
 
@@ -78,15 +85,15 @@ using namespace std;
 //};
 
 class Graph{
-    int Nnodes;
-    list<int> *adj;
 
-    void Tarjan_Visit(int u, int *d, int *low);
+//    void Tarjan_Visit(int u);
 
 public:
+    int Nnodes;
+    list<int> *adj;
     Graph(int V);
     void addEdge(int src, int dest);
-    void SCC_Tarjan();
+//    void SCC_Tarjan();
 };
 
 Graph::Graph(int V) {
@@ -98,35 +105,50 @@ void Graph::addEdge(int src, int dest) {
     adj[src].push_back(dest);
 }
 
-void Graph::Tarjan_Visit(int u, int *d, int *low){
+void Tarjan_Visit(int u, list<int> *adj){
     d[u] = low[u] = visited;
     visited++;
+    L->push(u);
     list<int>::iterator iterator;
+    //cout << "u: " << u << " L->top(): " << L->top() << endl;
     for(iterator = adj[u].begin(); iterator != adj[u].end(); iterator++){
         int v = *iterator;
-        if (d[v] == -1)
-            Tarjan_Visit(v, d, low);
+        if (d[v] == -1 || isStackMember[v]) {
+            Tarjan_Visit(v, adj);
+        }
         low[u] = min(low[u], low[v]);
     }
+    int stackExtracted;
     if (d[u] == low[u]){
+        //cout << L->top() << " " << u << endl;
+        while (L->top() != u){
+            stackExtracted = L->top();
+            isStackMember[stackExtracted] = false;
+            L->pop();
+        }
+        stackExtracted = L->top();
         nSCC++;
-//        cout << u << ": d[u]= " << d[u] << " low[u]= " << low[u] << endl;
+        isStackMember[stackExtracted] = false;
+        L->pop();
     }
 
 }
 
-void Graph::SCC_Tarjan() {
-    int *d = new int[Nnodes];
-    int *low = new int[Nnodes];
+void SCC_Tarjan(Graph graph) {
+    isStackMember = new bool[Nnodes];
+    L = new stack<int>();
+    d = new int[Nnodes];
+    low = new int[Nnodes];
 
     for(int i = 0; i < Nnodes; i++){
         d[i] = -1;
         low[i] = -1;
+        isStackMember[i] = false;
     }
 
     for (int i = 0; i < Nnodes; i++){
         if (d[i] == -1)
-            Tarjan_Visit(i, d, low);
+            Tarjan_Visit(i, graph.adj);
     }
 }
 
@@ -141,7 +163,6 @@ void Graph::SCC_Tarjan() {
 //}
 
 Graph parseInputs(){
-    int Nnodes, Nedges;
     cin >> Nnodes >> Nedges;
     Graph dominos = Graph(Nnodes);
     if (Nnodes < 2 || Nedges < 0){
@@ -155,26 +176,15 @@ Graph parseInputs(){
             cerr << "The Node Number is invalid, please provide a number between 1 and " << Nnodes << endl;
             exit(0);
         }
-        dominos.addEdge(n1, n2);
+        dominos.addEdge(n1-1, n2-1);
     }
     return dominos;
 }
 
 int main() {
     Graph dominos = parseInputs();
-    dominos.SCC_Tarjan();
+    SCC_Tarjan(dominos);
 
-
-    cout << nSCC << " " /*<< maxSCCElemnts*/<< endl;
-
-
-//    for (int i = 0; i < Nnodes ; i++)
-//    {
-//        // print given vertex
-//        cout << i+1 << " ——";
-//
-//        // print all its neighboring vertices
-//        printList(dominos.head[i]);
-//    }
+    cout << nSCC << " " << maxSCCElemnts << endl;
     return 0;
 }
