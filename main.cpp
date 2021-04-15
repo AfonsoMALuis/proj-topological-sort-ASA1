@@ -1,114 +1,105 @@
 #include <iostream>
-#include <vector>
+#include <list>
+#include <algorithm>
+
+int Nnodes, Nedges, nInterventions = 0;
+int *zeta;
+bool *isHeadNode, *visited;
 
 using namespace std;
 
-// Data structure to store adjacency list nodes
-struct Node {
-    int val;
-    Node* next;
-};
-
-// Data structure to store a graph edge
-struct Edge {
-    int src, dest;
-};
-
-class Graph {
-    // Function to allocate a new node for the adjacency list
-    Node* getAdjListNode(int dest, Node* head) {
-        Node* newNode = new Node;
-        newNode->val = dest;
-
-        // point new node to the current head
-        newNode->next = head;
-
-        return newNode;
-    }
-    int N;    // total number of nodes in the graph
+class Graph{
 
 public:
-    // An array of pointers to Node to represent the
-    // adjacency list
-    Node **head;
-
-    // Constructor
-    Graph(Edge edges[], int n, int N) {
-        // allocate memory
-        head = new Node*[N]();
-        this->N = N;
-
-        // initialize head pointer for all vertices
-        for (int i = 0; i < N ; i++) {
-            head[i] = nullptr;
-        }
-
-        // add edges to the directed graph
-        for (int i = 0; i < n; i++) {
-            int src = edges[i].src;
-            int dest = edges[i].dest;
-
-            // insert at the beginning
-            Node* newNode = getAdjListNode(dest, head[src]);
-
-            // point head pointer to the new node
-            head[src] = newNode;
-        }
-    }
-    // Destructor
-    ~Graph() {
-        for (int i = 0; i < N; i++) {
-            delete[] head[i];
-        }
-
-        delete[] head;
-    }
+    int Nnodes;
+    list<int> *adj;
+    Graph(int V);
+    ~Graph();
+    void addEdge(int src, int dest);
 };
 
-//void printList(Node* ptr)
-//{
-//    while (ptr != nullptr)
-//    {
-//        cout << " —> " << ptr->val+1 << " ";
-//        ptr = ptr->next;
-//    }
-//    cout << endl;
-//}
+Graph::Graph(int V) {
+    this->Nnodes = V;
+    this->adj = new list<int>[V];
+}
 
-Graph parseInputs(int Nnodes, int Nedges){
+void Graph::addEdge(int src, int dest) {
+    adj[src].push_back(dest);
+}
+
+Graph::~Graph() {
+//    for (int i = 0; i < Nnodes; i++){
+//        adj[i].~list<int>();
+//    }
+//    adj->clear();
+    //delete[] adj;
+}
+
+void Topological_Sort_1(int u, list<int> *adj){
+    visited[u] = true;
+
+    list<int>::iterator iterator;
+    for(iterator = adj[u].begin(); iterator != adj[u].end(); iterator++) {
+        if (!visited[*iterator]){
+            Topological_Sort_1(*iterator, adj);
+        }
+        zeta[u] = max(zeta[u], zeta[*iterator]+1);
+        if(isHeadNode[*iterator]) {
+            isHeadNode[*iterator] = false;
+            nInterventions--;
+        }
+    }
+
+}
+
+void Topological_Sort(Graph graph){
+    isHeadNode = new bool[Nnodes];
+    visited = new bool[Nnodes];
+    zeta = new int[Nnodes];
+
+    for (int i = 0; i < Nnodes; i++){
+        isHeadNode[i] = visited [i] = false;
+        zeta[i] = 1;
+    }
+
+    for (int i = 0; i < Nnodes; i++){
+        if (!visited[i]){
+            isHeadNode[i] = true;
+            nInterventions++;
+            Topological_Sort_1(i, graph.adj);
+        }
+    }
+}
+
+Graph parseInputs() {
+    cin >> Nnodes >> Nedges;
+    Graph dominos = Graph(Nnodes);
     if (Nnodes < 2 || Nedges < 0){
         cerr << "The number of nodes must be >= 2 and the number of edges must be >= 0" << endl;
         exit(0);
     }
-    Edge edges [Nedges] = {};
     for (int i = 0; i<Nedges; i++){
         int n1, n2;
-        Edge e{};
         cin >> n1 >> n2;
-        e.src = n1-1;
-        e.dest = n2-1;
-        if ( e.src > Nnodes-1 || e.dest > Nnodes-1 || e.src < 0 || e.dest < 0){
+        if ( n1 > Nnodes || n2 > Nnodes || n1 < 1 || n2 < 1){
             cerr << "The Node Number is invalid, please provide a number between 1 and " << Nnodes << endl;
             exit(0);
         }
-        edges[i] = e;
+        dominos.addEdge(n1-1, n2-1);
     }
-    return Graph(edges, Nedges, Nnodes);
+    return dominos;
 }
 
 int main() {
-    int Nnodes, Nedges;
-    cin >> Nnodes >> Nedges;
-    Graph dominos = parseInputs(Nnodes, Nedges);
-
-
-//    for (int i = 0; i < Nnodes ; i++)
-//    {
-//        // print given vertex
-//        cout << i+1 << " ——";
-//
-//        // print all its neighboring vertices
-//        printList(dominos.head[i]);
+    Graph dominos = parseInputs();
+    Topological_Sort(dominos);
+//    for (int i = 0; i < Nnodes; i++){
+//        if(isHeadNode[i])
+//            nInterventions++;
 //    }
+    cout << nInterventions << " " << *max_element(zeta, zeta + Nnodes) << endl;
+    delete[] isHeadNode;
+    delete[] visited;
+    delete[] zeta;
     return 0;
 }
