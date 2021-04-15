@@ -1,99 +1,21 @@
 #include <iostream>
 #include <list>
-#include <vector>
 #include <algorithm>
-#include <stack>
 
-int visited = 0, nSCC = 0, maxSCCElemnts = 0, nSCCElementsAux = 0;;
-int *d, *low;
-int Nnodes, Nedges;
-bool *isStackMember;
-std::stack<int> *L;
+int Nnodes, Nedges, nInterventions = 0;
+int *zeta;
+bool *isHeadNode, *visited;
 
 using namespace std;
 
-// Data structure to store adjacency list nodes
-//struct Node {
-//    int val;
-//    Node* next;
-//};
-//
-// Data structure to store a graph edge
-//struct Edge {
-//    int src, dest;
-//};
-//
-//class Graph {
-//    // Function to allocate a new node for the adjacency list
-//    Node* getAdjListNode(int dest, Node* head) {
-//        Node* newNode = new Node;
-//        newNode->val = dest;
-//
-//        // point new node to the current head
-//        newNode->next = head;
-//
-//        return newNode;
-//    }
-//    int N;    // total number of nodes in the graph
-//
-//public:
-//    // An array of pointers to Node to represent the
-//    // adjacency list
-//    Node **head;
-//
-//    vector<int> d, low;
-//
-//
-//    // Constructor
-//    Graph(Edge edges[], int n, int N) {
-//        // allocate memory
-//        head = new Node*[N]();
-//        this->N = N;
-//
-//        this->d[N];
-//        this->low[N];
-//
-//        // initialize head pointer for all vertices
-//        for (int i = 0; i < N ; i++) {
-//            head[i] = nullptr;
-//        }
-//
-//        // add edges to the directed graph
-//        for (int i = 0; i < n; i++) {
-//            int src = edges[i].src;
-//            int dest = edges[i].dest;
-//
-//            // insert at the beginning
-//            Node* newNode = getAdjListNode(dest, head[src]);
-//
-//            // point head pointer to the new node
-//            head[src] = newNode;
-//        }
-//    }
-//    // Destructor
-//    ~Graph() {
-//        for (int i = 0; i < N; i++) {
-//            delete[] head[i];
-//        }
-//
-//        delete[] head;
-//    }
-//
-//    int getNodeNumber(){
-//        return N;
-//    }
-//};
-
 class Graph{
-
-//    void Tarjan_Visit(int u);
 
 public:
     int Nnodes;
     list<int> *adj;
     Graph(int V);
+    ~Graph();
     void addEdge(int src, int dest);
-//    void SCC_Tarjan();
 };
 
 Graph::Graph(int V) {
@@ -105,64 +27,51 @@ void Graph::addEdge(int src, int dest) {
     adj[src].push_back(dest);
 }
 
-void Tarjan_Visit(int u, list<int> *adj){
-    d[u] = low[u] = visited;
-    visited++;
-    L->push(u);
+Graph::~Graph() {
+//    for (int i = 0; i < Nnodes; i++){
+//        adj[i].~list<int>();
+//    }
+//    adj->clear();
+    //delete[] adj;
+}
+
+void Topological_Sort_1(int u, list<int> *adj){
+    visited[u] = true;
+
     list<int>::iterator iterator;
-    //cout << "u: " << u << " L->top(): " << L->top() << endl;
-    for(iterator = adj[u].begin(); iterator != adj[u].end(); iterator++){
-        int v = *iterator;
-        if (d[v] == -1 || isStackMember[v]) {
-            Tarjan_Visit(v, adj);
+    for(iterator = adj[u].begin(); iterator != adj[u].end(); iterator++) {
+        if (!visited[*iterator]){
+            Topological_Sort_1(*iterator, adj);
         }
-        low[u] = min(low[u], low[v]);
-    }
-    int stackExtracted;
-    if (d[u] == low[u]){
-        //cout << L->top() << " " << u << endl;
-        while (L->top() != u){
-            stackExtracted = L->top();
-            isStackMember[stackExtracted] = false;
-            L->pop();
+        zeta[u] = max(zeta[u], zeta[*iterator]+1);
+        if(isHeadNode[*iterator]) {
+            isHeadNode[*iterator] = false;
+            nInterventions--;
         }
-        stackExtracted = L->top();
-        nSCC++;
-        isStackMember[stackExtracted] = false;
-        L->pop();
     }
 
 }
 
-void SCC_Tarjan(Graph graph) {
-    isStackMember = new bool[Nnodes];
-    L = new stack<int>();
-    d = new int[Nnodes];
-    low = new int[Nnodes];
+void Topological_Sort(Graph graph){
+    isHeadNode = new bool[Nnodes];
+    visited = new bool[Nnodes];
+    zeta = new int[Nnodes];
 
-    for(int i = 0; i < Nnodes; i++){
-        d[i] = -1;
-        low[i] = -1;
-        isStackMember[i] = false;
+    for (int i = 0; i < Nnodes; i++){
+        isHeadNode[i] = visited [i] = false;
+        zeta[i] = 1;
     }
 
     for (int i = 0; i < Nnodes; i++){
-        if (d[i] == -1)
-            Tarjan_Visit(i, graph.adj);
+        if (!visited[i]){
+            isHeadNode[i] = true;
+            nInterventions++;
+            Topological_Sort_1(i, graph.adj);
+        }
     }
 }
 
-//void printList(Node* ptr)
-//{
-//    while (ptr != nullptr)
-//    {
-//        cout << " —> " << ptr->val+1 << " ";
-//        ptr = ptr->next;
-//    }
-//    cout << endl;
-//}
-
-Graph parseInputs(){
+Graph parseInputs() {
     cin >> Nnodes >> Nedges;
     Graph dominos = Graph(Nnodes);
     if (Nnodes < 2 || Nedges < 0){
@@ -183,8 +92,14 @@ Graph parseInputs(){
 
 int main() {
     Graph dominos = parseInputs();
-    SCC_Tarjan(dominos);
-
-    cout << nSCC << " " << maxSCCElemnts << endl;
+    Topological_Sort(dominos);
+//    for (int i = 0; i < Nnodes; i++){
+//        if(isHeadNode[i])
+//            nInterventions++;
+//    }
+    cout << nInterventions << " " << *max_element(zeta, zeta + Nnodes) << endl;
+    delete[] isHeadNode;
+    delete[] visited;
+    delete[] zeta;
     return 0;
 }
